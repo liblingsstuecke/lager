@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#1a8a5a">
+<title>Lager & Inventar</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.30.0/dist/tabler-icons.min.css">
+<style>
+  :root {
+    --green: #1a8a5a; --green-light: #e1f5ee; --green-dark: #157a50;
+    --purple-light: #eeedfe; --purple: #534ab7;
+    --bg: #f4f4f0; --surface: #ffffff; --surface2: #f1efe8;
+    --border: rgba(0,0,0,0.12); --border2: rgba(0,0,0,0.22);
+    --text: #1a1a18; --text2: #5f5e5a; --text3: #888780;
+    --radius: 12px; --radius-sm: 8px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg:#1c1c1a; --surface:#2a2a28; --surface2:#333331;
+      --border:rgba(255,255,255,0.1); --border2:rgba(255,255,255,0.2);
+      --text:#f0ede8; --text2:#b4b2a9; --text3:#888780;
+      --green-light:#083d28; --purple-light:#1a1840;
+    }
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding-bottom:80px}
+
+  .header{position:sticky;top:0;z-index:100;background:var(--surface);border-bottom:0.5px solid var(--border);padding:12px 16px;display:flex;align-items:center;gap:10px}
+  .logo-icon{width:32px;height:32px;background:var(--green);border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px;flex-shrink:0}
+  .logo-text{font-size:16px;font-weight:600}
+  .logo-sub{font-size:11px;color:var(--text2)}
+  .sync-indicator{margin-left:auto;display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text3)}
+  .sync-dot{width:8px;height:8px;border-radius:50%;background:#ccc;flex-shrink:0}
+  .sync-dot.connected{background:#1a8a5a}
+  .sync-dot.syncing{background:#f59e0b;animation:pulse 1s infinite}
+  .sync-dot.error{background:#e53e3e}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+  .bottom-nav{position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:0.5px solid var(--border);display:flex;z-index:100;padding-bottom:env(safe-area-inset-bottom)}
+  .nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px 0;gap:3px;font-size:10px;color:var(--text3);border:none;background:transparent;cursor:pointer;transition:.15s}
+  .nav-btn i{font-size:22px}
+  .nav-btn.active{color:var(--green)}
+
+  .section{display:none;padding:16px}
+  .section.active{display:block}
+
+  .card{background:var(--surface);border-radius:var(--radius);border:0.5px solid var(--border);padding:16px;margin-bottom:12px}
+  .card-title{font-size:13px;font-weight:500;color:var(--text2);margin-bottom:12px;display:flex;align-items:center;gap:6px}
+
+  /* Login screen */
+  .login-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;text-align:center;padding:2rem}
+  .login-icon{width:80px;height:80px;background:var(--green-light);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1.5rem;font-size:36px;color:var(--green)}
+  .login-title{font-size:22px;font-weight:600;margin-bottom:.5rem}
+  .login-sub{font-size:14px;color:var(--text2);margin-bottom:2rem;line-height:1.5}
+  .btn-google{display:flex;align-items:center;gap:10px;padding:14px 24px;background:var(--surface);border:0.5px solid var(--border2);border-radius:var(--radius);font-size:15px;font-weight:500;cursor:pointer;width:100%;justify-content:center;transition:.15s}
+  .btn-google:active{background:var(--surface2)}
+  .google-logo{width:20px;height:20px}
+
+  /* Setup screen */
+  .setup-screen{padding:16px}
+  .setup-steps{counter-reset:step}
+  .setup-step{display:flex;gap:12px;margin-bottom:16px;align-items:flex-start}
+  .step-num{width:28px;height:28px;border-radius:50%;background:var(--green);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;flex-shrink:0;margin-top:2px}
+  .step-content{flex:1}
+  .step-title{font-size:14px;font-weight:500;margin-bottom:4px}
+  .step-desc{font-size:13px;color:var(--text2);line-height:1.5}
+  .step-link{color:var(--green);text-decoration:none;word-break:break-all}
+  .step-code{font-family:monospace;background:var(--surface2);padding:2px 6px;border-radius:4px;font-size:12px;border:0.5px solid var(--border)}
+  .input-row{display:flex;gap:8px;margin-top:8px}
+  .input-row input{flex:1;font-size:14px;padding:10px 12px;border:0.5px solid var(--border2);border-radius:var(--radius-sm);background:var(--surface2);color:var(--text)}
+  .btn-sm-green{padding:10px 14px;background:var(--green);color:#fff;border:none;border-radius:var(--radius-sm);font-size:13px;font-weight:500;cursor:pointer;white-space:nowrap}
+
+  .photo-area{border:2px dashed var(--border2);border-radius:var(--radius);min-height:180px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:var(--text3);font-size:14px;cursor:pointer;position:relative;overflow:hidden;background:var(--surface2)}
+  .photo-area img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+  .photo-area .cam-label{display:flex;flex-direction:column;align-items:center;gap:6px;position:relative;z-index:1}
+  .photo-area .cam-label i{font-size:40px;color:var(--green)}
+  .photo-change-btn{position:absolute;bottom:10px;right:10px;background:rgba(0,0,0,0.6);color:#fff;border:none;border-radius:20px;padding:6px 12px;font-size:12px;display:none;align-items:center;gap:4px;z-index:2;cursor:pointer}
+  .photo-area img ~ .cam-label{display:none}
+  .photo-area img ~ .photo-change-btn{display:flex}
+  #photoInput{display:none}
+
+  .field{margin-bottom:12px}
+  .field label{display:block;font-size:12px;color:var(--text2);margin-bottom:5px;font-weight:500}
+  .field input,.field select{width:100%;font-size:15px;padding:11px 12px;border:0.5px solid var(--border2);border-radius:var(--radius-sm);background:var(--surface2);color:var(--text);-webkit-appearance:none}
+  .field input:focus,.field select:focus{outline:none;border-color:var(--green)}
+  .id-display{font-size:18px;font-weight:600;font-family:monospace;color:var(--green);letter-spacing:1px}
+  .date-display{font-size:14px;color:var(--text2);margin-top:2px}
+
+  .cat-toggle{display:flex;border-radius:var(--radius-sm);overflow:hidden;border:0.5px solid var(--border2)}
+  .cat-btn{flex:1;padding:11px 8px;font-size:13px;border:none;background:var(--surface2);color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;transition:.15s}
+  .cat-btn:first-child{border-right:0.5px solid var(--border2)}
+  .cat-btn.active{background:var(--green);color:#fff;font-weight:500}
+
+  .btn-save{width:100%;padding:14px;background:var(--green);color:#fff;border:none;border-radius:var(--radius);font-size:16px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:.15s}
+  .btn-save:active{background:var(--green-dark)}
+  .btn-save:disabled{background:#aaa;cursor:not-allowed}
+
+  .toast{position:fixed;top:70px;left:16px;right:16px;border-radius:var(--radius);padding:12px 16px;font-size:14px;font-weight:500;display:none;align-items:center;gap:8px;z-index:200;box-shadow:0 4px 16px rgba(0,0,0,0.2)}
+  .toast.success{background:var(--green);color:#fff}
+  .toast.error{background:#e53e3e;color:#fff}
+  .toast.info{background:#2b6cb0;color:#fff}
+
+  .filter-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:4px;margin-bottom:12px}
+  .filter-scroll::-webkit-scrollbar{display:none}
+  .filter-row{display:flex;gap:6px;min-width:max-content;padding:2px 0}
+  .filter-chip{padding:6px 14px;font-size:13px;border:0.5px solid var(--border2);border-radius:100px;cursor:pointer;background:var(--surface);color:var(--text2);white-space:nowrap;transition:.15s}
+  .filter-chip.active{background:var(--green);color:#fff;border-color:var(--green)}
+
+  .product-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .product-card{background:var(--surface);border-radius:var(--radius);border:0.5px solid var(--border);overflow:hidden}
+  .product-thumb{height:110px;background:var(--surface2);display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative}
+  .product-thumb img{width:100%;height:100%;object-fit:cover}
+  .product-thumb i{font-size:32px;color:var(--text3)}
+  .loc-tag{position:absolute;bottom:6px;left:6px;font-size:10px;padding:2px 7px;border-radius:100px;font-weight:500}
+  .product-body{padding:10px}
+  .product-name{font-size:13px;font-weight:500;margin-bottom:2px;line-height:1.3}
+  .product-id-sm{font-size:10px;font-family:monospace;color:var(--text3)}
+  .product-price-sm{font-size:15px;font-weight:600;color:var(--green);margin:4px 0}
+  .cat-pill{font-size:10px;padding:2px 7px;border-radius:100px;display:inline-block}
+  .pill-food{background:var(--green-light);color:var(--green)}
+  .pill-deko{background:var(--purple-light);color:var(--purple)}
+
+  .loc-sheet{margin-top:8px}
+  .loc-sheet-title{font-size:11px;color:var(--text3);margin-bottom:5px}
+  .loc-btns{display:flex;flex-wrap:wrap;gap:4px}
+  .loc-chip{font-size:11px;padding:3px 8px;border-radius:100px;border:0.5px solid var(--border2);background:transparent;color:var(--text2);cursor:pointer;transition:.15s}
+  .loc-chip[data-loc="Lager"].active{background:#e6f1fb;color:#185fa5;border-color:#185fa5;font-weight:600}
+  .loc-chip[data-loc="SB-Schrank Diebach"].active{background:#eaf3de;color:#3b6d11;border-color:#3b6d11;font-weight:600}
+  .loc-chip[data-loc="SB-Schrank Fellen"].active{background:#faeeda;color:#854f0b;border-color:#854f0b;font-weight:600}
+  .loc-chip[data-loc="Verkauft"].active{background:#fcebeb;color:#a32d2d;border-color:#a32d2d;font-weight:600}
+  .loc-tag-lager{background:#e6f1fb;color:#185fa5}
+  .loc-tag-sb1{background:#eaf3de;color:#3b6d11}
+  .loc-tag-sb2{background:#faeeda;color:#854f0b}
+  .loc-tag-sold{background:#fcebeb;color:#a32d2d}
+
+  .del-btn{width:100%;margin-top:8px;padding:6px;font-size:11px;border:0.5px solid var(--border);border-radius:var(--radius-sm);background:transparent;color:var(--text3);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:4px}
+
+  .empty{text-align:center;padding:3rem 1rem;color:var(--text3)}
+  .empty i{font-size:48px;display:block;margin-bottom:12px}
+
+  .stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
+  .stat-tile{background:var(--surface2);border-radius:var(--radius-sm);padding:12px}
+  .stat-tile .val{font-size:20px;font-weight:600;margin-top:2px}
+  .stat-tile .lbl{font-size:11px;color:var(--text2)}
+  .ov-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:0.5px solid var(--border);font-size:13px}
+  .ov-row:last-child{border-bottom:none}
+  .ov-sub{font-size:11px;color:var(--text2)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+
+  .info-box{background:var(--surface2);border-radius:var(--radius-sm);padding:12px;font-size:13px;color:var(--text2);display:flex;gap:8px;align-items:flex-start;margin-bottom:12px}
+  .info-box i{color:var(--green);flex-shrink:0;font-size:16px;margin-top:1px}
+
+  .logout-btn{display:flex;align-items:center;gap:6px;padding:10px 14px;border:0.5px solid var(--border2);border-radius:var(--radius-sm);background:transparent;color:var(--text2);font-size:13px;cursor:pointer;margin-top:8px}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo-icon"><i class="ti ti-package"></i></div>
+  <div>
+    <div class="logo-text">Lager & Inventar</div>
+    <div class="logo-sub" id="headerSub">Nicht verbunden</div>
+  </div>
+  <div class="sync-indicator" id="syncIndicator">
+    <div class="sync-dot" id="syncDot"></div>
+    <span id="syncText">–</span>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- SETUP SCREEN (shown when no Client ID) -->
+<div id="setupScreen" style="display:none">
+  <div class="setup-screen">
+    <div class="card" style="text-align:center;padding:20px 16px 16px">
+      <div style="font-size:36px;margin-bottom:8px">☁️</div>
+      <div style="font-size:17px;font-weight:600;margin-bottom:6px">Google Drive einrichten</div>
+      <div style="font-size:13px;color:var(--text2);line-height:1.5">Einmalige Einrichtung – danach synchronisieren alle Geräte automatisch.</div>
+    </div>
+
+    <div class="card">
+      <div style="font-size:14px;font-weight:600;margin-bottom:16px">📋 Schritt-für-Schritt Anleitung</div>
+      <div class="setup-steps">
+        <div class="setup-step">
+          <div class="step-num">1</div>
+          <div class="step-content">
+            <div class="step-title">Google Cloud Console öffnen</div>
+            <div class="step-desc">Öffne im Browser: <a class="step-link" href="https://console.cloud.google.com" target="_blank">console.cloud.google.com</a><br>Mit deinem Google-Konto anmelden.</div>
+          </div>
+        </div>
+        <div class="setup-step">
+          <div class="step-num">2</div>
+          <div class="step-content">
+            <div class="step-title">Neues Projekt erstellen</div>
+            <div class="step-desc">Oben links auf „Projekt auswählen" klicken → „Neues Projekt" → Name z. B. <span class="step-code">Lager App</span> → „Erstellen"</div>
+          </div>
+        </div>
+        <div class="setup-step">
+          <div class="step-num">3</div>
+          <div class="step-content">
+            <div class="step-title">Google Drive API aktivieren</div>
+            <div class="step-desc">Linkes Menü → „APIs und Dienste" → „Bibliothek" → Suche nach <span class="step-code">Google Drive API</span> → Klicken → „Aktivieren"</div>
+          </div>
+        </div>
+        <div class="setup-step">
+          <div class="step-num">4</div>
+          <div class="step-content">
+            <div class="step-title">OAuth-Zustimmungsbildschirm</div>
+            <div class="step-desc">„APIs und Dienste" → „OAuth-Zustimmungsbildschirm" → Nutzertyp: <span class="step-code">Extern</span> → „Erstellen" → App-Name eingeben (z. B. Lager App) → deine E-Mail als Support-Kontakt → „Speichern und fortfahren" → bei Bereichen nichts ändern → „Speichern und fortfahren" → bei Testnutzer deine E-Mail hinzufügen → „Speichern"</div>
+          </div>
+        </div>
+        <div class="setup-step">
+          <div class="step-num">5</div>
+          <div class="step-content">
+            <div class="step-title">OAuth Client-ID erstellen</div>
+            <div class="step-desc">„APIs und Dienste" → „Anmeldedaten" → „Anmeldedaten erstellen" → „OAuth-Client-ID" → Anwendungstyp: <span class="step-code">Webanwendung</span> → Name beliebig → Bei „Autorisierte JavaScript-Quellen" klicke „URI hinzufügen" und gib ein: <span class="step-code">null</span> (für lokale HTML-Datei) → „Erstellen"</div>
+          </div>
+        </div>
+        <div class="setup-step">
+          <div class="step-num">6</div>
+          <div class="step-content">
+            <div class="step-title">Client-ID hier einfügen</div>
+            <div class="step-desc">Es erscheint ein Fenster mit deiner Client-ID. Diese endet auf <span class="step-code">.apps.googleusercontent.com</span> – kopieren und unten einfügen.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="info-box">
+        <i class="ti ti-lock"></i>
+        <span>Die App speichert deine Daten ausschließlich in deinem eigenen Google Drive. Kein externer Server hat Zugriff.</span>
+      </div>
+
+      <div class="field">
+        <label>Deine Google OAuth Client-ID</label>
+        <input type="text" id="clientIdInput" placeholder="123456789-abc...apps.googleusercontent.com">
+      </div>
+      <button class="btn-save" onclick="saveClientId()">
+        <i class="ti ti-check"></i> Client-ID speichern & App starten
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN APP (shown when logged in) -->
+<div id="mainApp" style="display:none">
+
+  <!-- NEU -->
+  <div class="section" id="sec-neu">
+    <div class="card">
+      <div class="photo-area" id="photoArea" onclick="document.getElementById('photoInput').click()">
+        <div class="cam-label">
+          <i class="ti ti-camera"></i>
+          <span>Foto aufnehmen oder auswählen</span>
+        </div>
+        <button class="photo-change-btn" onclick="event.stopPropagation();document.getElementById('photoInput').click()">
+          <i class="ti ti-refresh" style="font-size:14px"></i> Ändern
+        </button>
+      </div>
+      <input type="file" id="photoInput" accept="image/*" capture="environment" onchange="handlePhoto(this)">
+    </div>
+
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <div>
+          <div style="font-size:11px;color:var(--text2);font-weight:500;margin-bottom:2px">PRODUKT-ID</div>
+          <div class="id-display" id="idDisplay">—</div>
+          <div class="date-display" id="dateDisplay">—</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:11px;color:var(--text2);font-weight:500;margin-bottom:4px">KATEGORIE</div>
+          <div class="cat-toggle">
+            <button class="cat-btn active" id="catFood" onclick="setCat('food')">
+              <i class="ti ti-apple" style="font-size:16px"></i> Lebensmittel
+            </button>
+            <button class="cat-btn" id="catDeko" onclick="setCat('deko')">
+              <i class="ti ti-flower" style="font-size:16px"></i> Deko
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="field">
+        <label>Bezeichnung *</label>
+        <input type="text" id="prodName" placeholder="z. B. Holzlöffel, Marmelade Erdbeere …">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="field">
+          <label>Preis (€)</label>
+          <input type="number" id="prodPrice" placeholder="0.00" step="0.01" min="0" inputmode="decimal">
+        </div>
+        <div class="field">
+          <label>Lagerort</label>
+          <select id="prodLocation">
+            <option value="Lager">Lager</option>
+            <option value="SB-Schrank Diebach">SB Diebach</option>
+            <option value="SB-Schrank Fellen">SB Fellen</option>
+            <option value="Verkauft">Verkauft</option>
+          </select>
+        </div>
+      </div>
+      <button class="btn-save" id="btnSave" onclick="saveProduct()">
+        <i class="ti ti-device-floppy"></i> Produkt speichern & sync
+      </button>
+    </div>
+  </div>
+
+  <!-- PRODUKTE -->
+  <div class="section" id="sec-produkte">
+    <div class="filter-scroll">
+      <div class="filter-row">
+        <div class="filter-chip active" onclick="setFilter('alle',this)">Alle</div>
+        <div class="filter-chip" onclick="setFilter('Lager',this)">Lager</div>
+        <div class="filter-chip" onclick="setFilter('SB-Schrank Diebach',this)">SB Diebach</div>
+        <div class="filter-chip" onclick="setFilter('SB-Schrank Fellen',this)">SB Fellen</div>
+        <div class="filter-chip" onclick="setFilter('Verkauft',this)">Verkauft</div>
+        <div class="filter-chip" onclick="setFilter('food',this)">Lebensmittel</div>
+        <div class="filter-chip" onclick="setFilter('deko',this)">Deko</div>
+      </div>
+    </div>
+    <div id="productGrid" class="product-grid"></div>
+  </div>
+
+  <!-- ÜBERSICHT -->
+  <div class="section" id="sec-uebersicht">
+    <div class="grid2">
+      <div class="card" style="margin-bottom:0">
+        <div class="card-title"><i class="ti ti-apple" style="color:var(--green)"></i> Lebensmittel</div>
+        <div id="ov-food-stats"></div>
+        <div style="margin-top:8px" id="ov-food-loc"></div>
+      </div>
+      <div class="card" style="margin-bottom:0">
+        <div class="card-title"><i class="ti ti-flower" style="color:var(--purple)"></i> Deko</div>
+        <div id="ov-deko-stats"></div>
+        <div style="margin-top:8px" id="ov-deko-loc"></div>
+      </div>
+    </div>
+    <div class="card" style="margin-top:10px">
+      <div class="card-title"><i class="ti ti-map-pin"></i> Nach Lagerort</div>
+      <div id="ov-loc"></div>
+    </div>
+    <div class="card">
+      <div class="card-title"><i class="ti ti-coins" style="color:var(--green)"></i> Gesamt</div>
+      <div id="ov-total"></div>
+    </div>
+    <div class="card">
+      <div class="card-title"><i class="ti ti-settings"></i> Einstellungen</div>
+      <div style="font-size:13px;color:var(--text2);margin-bottom:8px">Angemeldet als: <strong id="userEmail">–</strong></div>
+      <button class="logout-btn" onclick="signOut()"><i class="ti ti-logout"></i> Abmelden</button>
+      <button class="logout-btn" onclick="resetClientId()" style="margin-top:4px;color:#e53e3e;border-color:#e53e3e"><i class="ti ti-trash"></i> Client-ID zurücksetzen</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- Bottom Nav -->
+<nav class="bottom-nav" id="bottomNav" style="display:none">
+  <button class="nav-btn active" id="nav-neu" onclick="switchTab('neu')">
+    <i class="ti ti-plus"></i><span>Neu</span>
+  </button>
+  <button class="nav-btn" id="nav-produkte" onclick="switchTab('produkte')">
+    <i class="ti ti-grid-dots"></i><span>Produkte</span>
+  </button>
+  <button class="nav-btn" id="nav-uebersicht" onclick="switchTab('uebersicht')">
+    <i class="ti ti-chart-bar"></i><span>Übersicht</span>
+  </button>
+</nav>
+
+<!-- Google Identity Services -->
+<script src="https://accounts.google.com/gsi/client" async></script>
+<script>
+// ─── CONFIG ───────────────────────────────────────────────────────────────────
+const DRIVE_FILE_NAME = 'lager_inventar_data.json';
+const SCOPES = 'https://www.googleapis.com/auth/drive.appdata';
+
+// ─── STATE ────────────────────────────────────────────────────────────────────
+let products = [];
+let currentPhoto = null;
+let currentCat = 'food';
+let currentFilter = 'alle';
+let accessToken = null;
+let driveFileId = null;
+let clientId = localStorage.getItem('lager_client_id') || '';
+let isSyncing = false;
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+window.onload = function() {
+  if (!clientId) {
+    document.getElementById('setupScreen').style.display = 'block';
+  } else {
+    initGoogleAuth();
+  }
+};
+
+function saveClientId() {
+  const val = document.getElementById('clientIdInput').value.trim();
+  if (!val || !val.includes('.apps.googleusercontent.com')) {
+    showToast('Bitte eine gültige Client-ID eingeben', 'error'); return;
+  }
+  clientId = val;
+  localStorage.setItem('lager_client_id', clientId);
+  document.getElementById('setupScreen').style.display = 'none';
+  initGoogleAuth();
+}
+
+function resetClientId() {
+  if (!confirm('Client-ID zurücksetzen? Du musst dich erneut einrichten.')) return;
+  localStorage.removeItem('lager_client_id');
+  location.reload();
+}
+
+// ─── GOOGLE AUTH ──────────────────────────────────────────────────────────────
+function initGoogleAuth() {
+  // Show login screen while auth loads
+  document.getElementById('setupScreen').style.display = 'none';
+  showLoginScreen();
+}
+
+function showLoginScreen() {
+  document.getElementById('mainApp').style.display = 'none';
+  document.getElementById('bottomNav').style.display = 'none';
+
+  const loginDiv = document.createElement('div');
+  loginDiv.id = 'loginScreen';
+  loginDiv.innerHTML = `
+    <div class="login-screen">
+      <div class="login-icon"><i class="ti ti-brand-google-drive"></i></div>
+      <div class="login-title">Lager & Inventar</div>
+      <div class="login-sub">Melde dich mit Google an, um deine Daten geräteübergreifend zu synchronisieren.</div>
+      <button class="btn-google" onclick="startGoogleLogin()">
+        <svg class="google-logo" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+        Mit Google anmelden
+      </button>
+    </div>`;
+  document.body.appendChild(loginDiv);
+}
+
+function startGoogleLogin() {
+  const client = google.accounts.oauth2.initTokenClient({
+    client_id: clientId,
+    scope: SCOPES,
+    callback: async (response) => {
+      if (response.error) { showToast('Anmeldung fehlgeschlagen: ' + response.error, 'error'); return; }
+      accessToken = response.access_token;
+      const loginScreen = document.getElementById('loginScreen');
+      if (loginScreen) loginScreen.remove();
+      await loadUserInfo();
+      await loadFromDrive();
+      showMainApp();
+    }
+  });
+  client.requestAccessToken();
+}
+
+async function loadUserInfo() {
+  try {
+    const r = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+      headers: { Authorization: 'Bearer ' + accessToken }
+    });
+    const d = await r.json();
+    document.getElementById('userEmail').textContent = d.email || '–';
+    document.getElementById('headerSub').textContent = d.email || 'Verbunden';
+  } catch(e) {}
+}
+
+function showMainApp() {
+  document.getElementById('mainApp').style.display = 'block';
+  document.getElementById('bottomNav').style.display = 'flex';
+  setSyncStatus('connected', 'Verbunden');
+  initForm();
+  renderOverview();
+}
+
+function signOut() {
+  google.accounts.oauth2.revoke(accessToken, () => {});
+  accessToken = null;
+  driveFileId = null;
+  products = [];
+  document.getElementById('mainApp').style.display = 'none';
+  document.getElementById('bottomNav').style.display = 'none';
+  showLoginScreen();
+}
+
+// ─── DRIVE SYNC ───────────────────────────────────────────────────────────────
+function setSyncStatus(status, text) {
+  const dot = document.getElementById('syncDot');
+  const txt = document.getElementById('syncText');
+  dot.className = 'sync-dot ' + status;
+  txt.textContent = text;
+}
+
+async function findDriveFile() {
+  const r = await fetch(
+    `https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=name='${DRIVE_FILE_NAME}'&fields=files(id,name)`,
+    { headers: { Authorization: 'Bearer ' + accessToken } }
+  );
+  const d = await r.json();
+  return d.files && d.files.length ? d.files[0].id : null;
+}
+
+async function loadFromDrive() {
+  setSyncStatus('syncing', 'Lade...');
+  try {
+    driveFileId = await findDriveFile();
+    if (!driveFileId) {
+      products = [];
+      setSyncStatus('connected', 'Neu');
+      return;
+    }
+    const r = await fetch(
+      `https://www.googleapis.com/drive/v3/files/${driveFileId}?alt=media`,
+      { headers: { Authorization: 'Bearer ' + accessToken } }
+    );
+    const data = await r.json();
+    products = Array.isArray(data) ? data : [];
+    setSyncStatus('connected', 'Synchronisiert');
+  } catch(e) {
+    products = [];
+    setSyncStatus('error', 'Fehler');
+    showToast('Fehler beim Laden der Daten', 'error');
+  }
+}
+
+async function saveToDrive() {
+  if (!accessToken) return;
+  setSyncStatus('syncing', 'Speichere...');
+  isSyncing = true;
+  try {
+    const content = JSON.stringify(products);
+    const metadata = { name: DRIVE_FILE_NAME, parents: ['appDataFolder'] };
+
+    if (driveFileId) {
+      // Update existing file
+      const form = new FormData();
+      form.append('metadata', new Blob([JSON.stringify({})], {type:'application/json'}));
+      form.append('file', new Blob([content], {type:'application/json'}));
+      await fetch(
+        `https://www.googleapis.com/upload/drive/v3/files/${driveFileId}?uploadType=multipart`,
+        { method: 'PATCH', headers: { Authorization: 'Bearer ' + accessToken }, body: form }
+      );
+    } else {
+      // Create new file
+      const form = new FormData();
+      form.append('metadata', new Blob([JSON.stringify(metadata)], {type:'application/json'}));
+      form.append('file', new Blob([content], {type:'application/json'}));
+      const r = await fetch(
+        'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart',
+        { method: 'POST', headers: { Authorization: 'Bearer ' + accessToken }, body: form }
+      );
+      const d = await r.json();
+      driveFileId = d.id;
+    }
+    setSyncStatus('connected', 'Synchronisiert');
+  } catch(e) {
+    setSyncStatus('error', 'Sync-Fehler');
+    showToast('Fehler beim Speichern in Drive', 'error');
+  }
+  isSyncing = false;
+}
+
+// ─── APP LOGIC ────────────────────────────────────────────────────────────────
+function getYear(){ return new Date().getFullYear(); }
+function getTodayStr(){
+  const d = new Date();
+  return d.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'});
+}
+function getTodayISO(){ return new Date().toISOString().split('T')[0]; }
+
+function genId(){
+  const y = getYear();
+  const nums = products.filter(p=>p.id&&p.id.startsWith(y+'-')).map(p=>parseInt(p.id.split('-')[1])||0);
+  const max = nums.length ? Math.max(...nums) : 0;
+  return y+'-'+String(max+1).padStart(3,'0');
+}
+
+function initForm(){
+  document.getElementById('idDisplay').textContent = genId();
+  document.getElementById('dateDisplay').textContent = getTodayStr();
+  document.getElementById('prodName').value = '';
+  document.getElementById('prodPrice').value = '';
+  document.getElementById('prodLocation').value = 'Lager';
+  currentPhoto = null;
+  const pa = document.getElementById('photoArea');
+  const img = pa.querySelector('img');
+  if(img) img.remove();
+  setCat('food');
+}
+
+function handlePhoto(input){
+  if(!input.files||!input.files[0]) return;
+  // Compress image for Drive storage
+  const file = input.files[0];
+  const reader = new FileReader();
+  reader.onload = e => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const MAX = 800;
+      let w = img.width, h = img.height;
+      if(w > MAX){ h = Math.round(h*MAX/w); w = MAX; }
+      if(h > MAX){ w = Math.round(w*MAX/h); h = MAX; }
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      currentPhoto = canvas.toDataURL('image/jpeg', 0.75);
+      const pa = document.getElementById('photoArea');
+      let im = pa.querySelector('img');
+      if(!im){ im = document.createElement('img'); pa.insertBefore(im, pa.firstChild); }
+      im.src = currentPhoto;
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function setCat(cat){
+  currentCat = cat;
+  document.getElementById('catFood').classList.toggle('active', cat==='food');
+  document.getElementById('catDeko').classList.toggle('active', cat==='deko');
+}
+
+function showToast(msg, type='success'){
+  const t = document.getElementById('toast');
+  t.className = 'toast ' + type;
+  t.innerHTML = `<i class="ti ti-${type==='success'?'check':type==='error'?'alert-circle':'info-circle'}"></i> ${msg}`;
+  t.style.display = 'flex';
+  setTimeout(()=>{ t.style.display='none'; }, 2500);
+}
+
+async function saveProduct(){
+  const name = document.getElementById('prodName').value.trim();
+  if(!name){ document.getElementById('prodName').focus(); return; }
+  const price = parseFloat(document.getElementById('prodPrice').value)||0;
+  const loc = document.getElementById('prodLocation').value;
+  products.push({ id:genId(), date:getTodayISO(), dateDisplay:getTodayStr(), name, price, location:loc, cat:currentCat, photo:currentPhoto });
+  document.getElementById('btnSave').disabled = true;
+  await saveToDrive();
+  document.getElementById('btnSave').disabled = false;
+  showToast('Produkt gespeichert & synchronisiert!');
+  initForm();
+  renderOverview();
+}
+
+async function setLocation(id, loc){
+  const p = products.find(x=>x.id===id);
+  if(!p) return;
+  p.location = loc;
+  await saveToDrive();
+  renderProducts();
+  renderOverview();
+}
+
+async function deleteProduct(id){
+  if(!confirm('Produkt löschen?')) return;
+  products = products.filter(x=>x.id!==id);
+  await saveToDrive();
+  renderProducts();
+  renderOverview();
+}
+
+function setFilter(f, el){
+  currentFilter = f;
+  document.querySelectorAll('.filter-chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+  renderProducts();
+}
+
+function locTagClass(loc){
+  if(loc==='Lager') return 'loc-tag-lager';
+  if(loc==='SB-Schrank Diebach') return 'loc-tag-sb1';
+  if(loc==='SB-Schrank Fellen') return 'loc-tag-sb2';
+  return 'loc-tag-sold';
+}
+function locShort(loc){
+  if(loc==='SB-Schrank Diebach') return 'SB Diebach';
+  if(loc==='SB-Schrank Fellen') return 'SB Fellen';
+  return loc;
+}
+
+function renderProducts(){
+  let filtered = [...products];
+  if(currentFilter==='food') filtered=filtered.filter(p=>p.cat==='food');
+  else if(currentFilter==='deko') filtered=filtered.filter(p=>p.cat==='deko');
+  else if(currentFilter!=='alle') filtered=filtered.filter(p=>p.location===currentFilter);
+  const grid = document.getElementById('productGrid');
+  if(!filtered.length){
+    grid.innerHTML='<div class="empty" style="grid-column:1/-1"><i class="ti ti-inbox"></i>Keine Produkte</div>';
+    return;
+  }
+  const locs = ['Lager','SB-Schrank Diebach','SB-Schrank Fellen','Verkauft'];
+  grid.innerHTML = filtered.sort((a,b)=>b.id.localeCompare(a.id)).map(p=>{
+    const imgH = p.photo ? `<img src="${p.photo}" alt="${p.name}">` : `<i class="ti ti-photo"></i>`;
+    const chips = locs.map(l=>`<button class="loc-chip${p.location===l?' active':''}" data-loc="${l}" onclick="setLocation('${p.id}','${l}')">${locShort(l)}</button>`).join('');
+    const pill = p.cat==='food' ? '<span class="cat-pill pill-food">Lebensmittel</span>' : '<span class="cat-pill pill-deko">Deko</span>';
+    return `<div class="product-card">
+      <div class="product-thumb">${imgH}<span class="loc-tag ${locTagClass(p.location)}">${locShort(p.location)}</span></div>
+      <div class="product-body">
+        <div class="product-name">${p.name}</div>
+        <div class="product-id-sm">${p.id} · ${p.dateDisplay||p.date}</div>
+        <div class="product-price-sm">${p.price.toFixed(2)} €</div>
+        ${pill}
+        <div class="loc-sheet"><div class="loc-sheet-title">Lagerort:</div><div class="loc-btns">${chips}</div></div>
+        <button class="del-btn" onclick="deleteProduct('${p.id}')"><i class="ti ti-trash" style="font-size:13px"></i> Löschen</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderOverview(){
+  const locs = ['Lager','SB-Schrank Diebach','SB-Schrank Fellen','Verkauft'];
+  function catBlock(cat, statsId, locId){
+    const ps = products.filter(p=>p.cat===cat);
+    const total = ps.reduce((s,p)=>s+p.price,0);
+    const avail = ps.filter(p=>p.location!=='Verkauft');
+    const availVal = avail.reduce((s,p)=>s+p.price,0);
+    document.getElementById(statsId).innerHTML=`
+      <div class="stats-grid">
+        <div class="stat-tile"><div class="lbl">Gesamt</div><div class="val">${ps.length}</div></div>
+        <div class="stat-tile"><div class="lbl">Gesamtwert</div><div class="val">${total.toFixed(2)}€</div></div>
+        <div class="stat-tile"><div class="lbl">Verfügbar</div><div class="val">${avail.length}</div></div>
+        <div class="stat-tile"><div class="lbl">Lagerbestand</div><div class="val">${availVal.toFixed(2)}€</div></div>
+      </div>`;
+    document.getElementById(locId).innerHTML = locs.map(l=>{
+      const lps=ps.filter(p=>p.location===l);
+      if(!lps.length) return '';
+      return `<div class="ov-row"><span>${locShort(l)}</span><span>${lps.length} · <strong>${lps.reduce((s,p)=>s+p.price,0).toFixed(2)}€</strong></span></div>`;
+    }).join('') || '<div class="ov-row"><span style="color:var(--text3)">Keine Produkte</span></div>';
+  }
+  catBlock('food','ov-food-stats','ov-food-loc');
+  catBlock('deko','ov-deko-stats','ov-deko-loc');
+  document.getElementById('ov-loc').innerHTML = locs.map(l=>{
+    const lps=products.filter(p=>p.location===l);
+    const val=lps.reduce((s,p)=>s+p.price,0);
+    return `<div class="ov-row">
+      <div><div style="font-weight:500">${l}</div><div class="ov-sub">${lps.filter(p=>p.cat==='food').length} Lebensmittel · ${lps.filter(p=>p.cat==='deko').length} Deko</div></div>
+      <div style="text-align:right"><strong>${val.toFixed(2)} €</strong><div class="ov-sub">${lps.length} Stk.</div></div>
+    </div>`;
+  }).join('');
+  const total=products.reduce((s,p)=>s+p.price,0);
+  const avail=products.filter(p=>p.location!=='Verkauft').reduce((s,p)=>s+p.price,0);
+  const sold=products.filter(p=>p.location==='Verkauft').reduce((s,p)=>s+p.price,0);
+  document.getElementById('ov-total').innerHTML=`
+    <div class="stats-grid">
+      <div class="stat-tile"><div class="lbl">Alle Produkte</div><div class="val">${products.length}</div></div>
+      <div class="stat-tile"><div class="lbl">Gesamtwert</div><div class="val">${total.toFixed(2)}€</div></div>
+      <div class="stat-tile"><div class="lbl">Im Lager</div><div class="val">${avail.toFixed(2)}€</div></div>
+      <div class="stat-tile"><div class="lbl">Verkauft</div><div class="val">${sold.toFixed(2)}€</div></div>
+    </div>`;
+}
+
+function switchTab(tab){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('sec-'+tab).classList.add('active');
+  document.getElementById('nav-'+tab).classList.add('active');
+  if(tab==='produkte') renderProducts();
+  if(tab==='uebersicht') renderOverview();
+}
+</script>
+</body>
+</html>
